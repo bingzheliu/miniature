@@ -1,21 +1,19 @@
-# Containernet
+# Miniature
 
-[![Build Status](https://travis-ci.org/containernet/containernet.svg?branch=master)](https://travis-ci.org/containernet/containernet)
+<!-- [![Build Status](https://travis-ci.org/containernet/containernet.svg?branch=master)](https://travis-ci.org/containernet/containernet) -->
 
-## Containernet: Mininet fork that allows to use Docker containers as hosts in emulated networks
+## Miniature: Containernet fork that allows to use Kubernete cluster nodes as hosts in emulated networks
 
-<img align="left" width="200" height="200" style="margin-right: 30px" src="https://raw.githubusercontent.com/containernet/logo/master/containernet_logo_v1.png">
+Miniature leverage [Kind](https://kind.sigs.k8s.io/) to bootstrap kubernetes clusters, where each container represent a kubernete node. These containers are connect through Containernet to construct emulated networks. 
 
-Containernet is a fork of the famous [Mininet](http://mininet.org) network emulator and allows to use [Docker](https://www.docker.com) containers as hosts in emulated network topologies. This enables interesting functionalities to build networking/cloud emulators and testbeds. One example for this is the [NFV multi-PoP infrastructure emulator](https://github.com/sonata-nfv/son-emu) which was created by the [SONATA-NFV](http://sonata-nfv.eu) project and is now part of the [OpenSource MANO (OSM)](https://osm.etsi.org) project. Besides this, Containernet is actively used by the research community, focussing on experiments in the field of cloud computing, fog computing, network function virtualization (NFV), and multi-access edge computing (MEC).
+The features that are supported by [Containernet](https://github.com/containernet/containernet) are also supported in Miniature. 
 
-Based on: **Mininet 2.3.0d5**
-
+* Kind website: https://kind.sigs.k8s.io/
 * Containernet website: https://containernet.github.io/
 * Mininet website:  http://mininet.org
 * Original Mininet repository: https://github.com/mininet/mininet
 
----
-## Cite this work
+<!-- ## Cite this work
 
 If you use Containernet for your research and/or other publications, please cite (beside the original Mininet paper) the following paper to reference our work:
 
@@ -35,16 +33,18 @@ Bibtex:
     doi={10.1109/NFV-SDN.2016.7919490},
     month={Nov}
 }
-```
+``` -->
 
----
-## NFV multi-PoP Extension: `vim-emu`
+<!-- ## NFV multi-PoP Extension: `vim-emu`
 
-There is an extension of Containernet called [vim-emu](https://github.com/containernet/vim-emu) which is a full-featured multi-PoP emulation platform for NFV scenarios. Vim-emu was developed as part of the [SONATA-NFV](http://www.sonata-nfv.eu) project and is now hosted by the [OpenSource MANO project](https://osm.etsi.org/).
+There is an extension of Containernet called [vim-emu](https://github.com/containernet/vim-emu) which is a full-featured multi-PoP emulation platform for NFV scenarios. Vim-emu was developed as part of the [SONATA-NFV](http://www.sonata-nfv.eu) project and is now hosted by the [OpenSource MANO project](https://osm.etsi.org/). -->
 
 ---
 ## Features
 
+* Add a Kubernete cluster (currently only supporting Kind) to Mininet topologies
+
+Following are what supported by Containernet
 * Add, remove Docker containers to Mininet topologies
 * Connect Docker containers to topology (to switches, other containers, or legacy Mininet hosts)
 * Execute commands inside containers by using the Mininet CLI
@@ -61,13 +61,9 @@ There is an extension of Containernet called [vim-emu](https://github.com/contai
 * Traffic control links (delay, bw, loss, jitter)
 * Automated installation based on Ansible playbook
 
----
 ## Installation
 
-Containernet comes with two installation and deployment options.
-
-### Option 1: Bare-metal installation
-
+### Install Containernet
 Automatic installation is provided through an Ansible playbook.
 
 Requires: **Ubuntu Linux 18.04 LTS** and **Python3**
@@ -75,8 +71,8 @@ Experimental: **Ubuntu Linux 20.04 LTS** and **Python3**
 
 ```bash
 $ sudo apt-get install ansible git aptitude
-$ git clone https://github.com/containernet/containernet.git
-$ cd containernet/ansible
+$ git clone https://github.com/violetbingzhe/miniature
+$ cd miniature/ansible
 $ sudo ansible-playbook -i "localhost," -c local install.yml
 $ cd ..
 ```
@@ -91,82 +87,42 @@ sudo make develop
 sudo make install
 ```
 
-### Option 2: Nested Docker deployment
+### Install Kind
+Follow instruction from here: https://github.com/kubernetes-sigs/kind
 
-Containernet can be executed within a privileged Docker container (nested container deployment). There is also a pre-build Docker image available on [Docker Hub](https://hub.docker.com/r/containernet/containernet/).
-
-*Attention:* Container resource limitations, e.g., CPU share limits, are not supported in the nested container deployment. Use bare-metal installations if you need those features.
-
-#### Build/Pull
-
-```bash
-# build the container locally
-$ docker build -t containernet/containernet .
-
-# or pull the latest pre-build container
-$ docker pull containernet/containernet
-```
-
-#### Run
-
-```bash
-# run interactive container and directly start containernet example
-$ docker run --name containernet -it --rm --privileged --pid='host' -v /var/run/docker.sock:/var/run/docker.sock containernet/containernet
-
-# run interactive container and drop to shell
-$ docker run --name containernet -it --rm --privileged --pid='host' -v /var/run/docker.sock:/var/run/docker.sock containernet/containernet /bin/bash
-```
-
----
 ## Examples
 
-### Usage example (using bare-metal installation)
+### Usage example 
 
-Start example topology with some empty Docker containers connected to the network.
+Start example topology with one Docker container and two kubernetes nodes connected to the network.
 
-* run: `sudo python3 examples/containernet_example.py`
-* use: `containernet> d1 ifconfig` to see config of container `d1`
-* use: `containernet> d1 ping -c4 d2` to ping between containers
+* run: `sudo python3 kube_example_kind.py`
 
 ### Topology example
 
-In your custom topology script you can add Docker hosts as follows:
+In your custom topology script you can add kubernete cluster like this:
 
 ```python
+net = KubeSim(controller=Controller)
 info('*** Adding docker containers\n')
-d1 = net.addDocker('d1', ip='10.0.0.251', dimage="ubuntu:trusty")
-d2 = net.addDocker('d2', ip='10.0.0.252', dimage="ubuntu:trusty", cpu_period=50000, cpu_quota=25000)
-d3 = net.addHost('d3', ip='11.0.0.253', cls=Docker, dimage="ubuntu:trusty", cpu_shares=20)
-d4 = net.addDocker('d4', dimage="ubuntu:trusty", volumes=["/:/mnt/vol1:rw"])
+# config is optional
+net.addKubeCluster("test", config = "config/kind.yaml")
+# adding a control plane node
+k1 = net.addKubeNode("test", "k1", role = "control-plane", type = "kind")
+# adding a worker node
+k2 = net.addKubeNode("test", "k2", role = "worker", type = "kind")
+# can add a docker container into the topology
+d1 = net.addDocker('d1', ip='172.18.0.10', dimage="ubuntu:trusty")
 ```
 
----
-## Tests
+For more features, you could find it on Mininet or Containernet website. 
 
-```sh
-sudo make test
-```
-
----
 ## Documentation
-
-Containernet's [documentation](https://github.com/containernet/containernet/wiki) can be found in the [GitHub wiki](https://github.com/containernet/containernet/wiki). The documentation for the underlying Mininet project can be found [here](http://mininet.org/).
-
----
+More details TBD.
+<!-- Containernet's [documentation](https://github.com/containernet/containernet/wiki) can be found in the [GitHub wiki](https://github.com/containernet/containernet/wiki). The documentation for the underlying Mininet project can be found [here](http://mininet.org/).
+ -->
 ## Contact
+### Developer
 
-### Support
-
-If you have any questions, please use GitHub's [issue system](https://github.com/containernet/containernet/issues) or to get in touch.
-
-### Contribute
-
-Your contributions are very welcome! Please fork the GitHub repository and create a pull request. We use [Travis-CI](https://travis-ci.org/containernet/containernet) to automatically test new commits.
-
-### Lead developer
-
-Manuel Peuster
-* Mail: <manuel (at) peuster (dot) de>
-* Twitter: [@ManuelPeuster](https://twitter.com/ManuelPeuster)
-* GitHub: [@mpeuster](https://github.com/mpeuster)
-* Website: [https://peuster.de](https://peuster.de)
+Bingzhe Liu
+* Mail: <bingzhe (at) illinois (dot) edu>
